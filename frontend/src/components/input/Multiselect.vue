@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import {computed, onBeforeUnmount, onMounted, ref, toRefs, watch, type ComponentPublicInstance} from 'vue'
+import {computed, nextTick, onBeforeUnmount, onMounted, ref, toRefs, watch, type ComponentPublicInstance} from 'vue'
 import {useI18n} from 'vue-i18n'
 
 import {closeWhenClickedOutside} from '@/helpers/closeWhenClickedOutside'
@@ -157,6 +157,8 @@ const props = withDefaults(defineProps<{
 	name?: string
 	/** If true, will provide an 'add this as a new value' entry which  fires an @create event when clicking on it. */
 	creatable?: boolean
+	/** If true, Enter selects the first result or focuses the create option for confirmation. */
+	confirmCreateOnEnter?: boolean
 	/** The text shown next to the new value option. */
 	createPlaceholder?: string
 	/** The text shown next to an option. */
@@ -181,6 +183,7 @@ const props = withDefaults(defineProps<{
 	searchResults: () => [] as T[],
 	label: '',
 	creatable: false,
+	confirmCreateOnEnter: false,
 	createPlaceholder: () => useI18n().t('input.multiselect.createPlaceholder'),
 	selectPlaceholder: () => useI18n().t('input.multiselect.selectPlaceholder'),
 	multiple: false,
@@ -428,7 +431,27 @@ function create() {
 	closeSearchResults()
 }
 
-function createOrSelectOnEnter() {
+async function createOrSelectOnEnter() {
+	if (creatableAvailable.value && props.confirmCreateOnEnter) {
+		if (searchTimeout.value !== null) {
+			clearTimeout(searchTimeout.value)
+			searchTimeout.value = null
+		}
+
+		emit('search', query.value as string)
+		localLoading.value = false
+		showSearchResults.value = true
+		await nextTick()
+
+		if (filteredSearchResults.value.length > 0) {
+			select(filteredSearchResults.value[0])
+			return
+		}
+
+		preSelect(filteredSearchResults.value.length)
+		return
+	}
+
 	if (!creatableAvailable.value && searchResults.value.length === 1) {
 		select(searchResults.value[0])
 		return

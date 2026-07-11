@@ -7,6 +7,7 @@
 		:search-results="foundLabels"
 		label="title"
 		:creatable="creatable"
+		:confirm-create-on-enter="true"
 		:create-placeholder="$t('task.label.createPlaceholder')"
 		:search-delay="10"
 		:close-after-select="false"
